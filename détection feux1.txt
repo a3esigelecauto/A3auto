@@ -1,0 +1,108 @@
+import cv2
+import sys
+import numpy as np
+from sklearn.cluster import MiniBatchkMeans
+import serial
+import time
+
+def serial connect()
+	print("connection à l'arduino en cours")
+	try:
+		#self.arduino=serial.Serial('/dev/tty.usbmodemId111',115200, timeout=0.05)
+		arduino=serial.Serial('/dev/tty.usbmodem1411',115200, timeout=0.05)
+		time.sleep(1)
+		print("connection success")
+		self.arduino_exist = TRUE
+		self.connect_var.set("Connected")
+	except:
+		print("Connection failed")
+		self.connect_var.set("Connection failed")
+
+# pour fenêtre affichant la couleur
+W_height = 200
+W_width=200
+detected_color1 = np.zeros(W_height, W_width, 3), npuint8
+
+#zone de detection couleur
+detect_zone_x = 120
+detect_zone_y = 100
+detect_zone_w = 400
+detect_zone_h = 225
+
+video_capture = cv2.VideoCapture(0)
+#régler la largeur et la hauteur et, sans succès, régler  le temps d'exposition
+video_capture.set(3,640)
+video_capture.set(4,480)
+video_capture.set(10, 0)
+
+#connection serie
+#arduino = serial.Serial('/dev/tty.usbmodem1411',115200, timeout=0.05)
+
+try:
+	#self.arduino=serial.Serial('/dev/tty.usbmodemId111',115200, timeout=0.05)
+	arduino=serial.Serial('/dev/tty.usbmodem1411',115200, timeout=0.05)
+	time.sleep(1)
+	print("connection success")
+	connected = TRUE
+
+except:
+	print("Connection failed")
+	connected = false
+
+while True
+	
+	#arduino.flushInput
+	print(arduino.readline())
+	print(arduino.readline())
+	print(arduino.readline())
+	print(arduino.readline())
+
+	# Capture frame-by-frame
+	ret, frame = video_capture.read()
+
+	# gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+	detect_zone = frame[detect_zone_y:(detect_zone_y + detect_zone_h), detect_zone_x:detect_zone_w + detect_zone_x]
+
+	#remodele l'image pour qu'elle soit une liste de pixels
+	RGB_capture= RGB_capture.reshape((RGB_capture.shape[0] = RGB_capture.shape[1], 3))
+	
+	#regroupe les intensités de pixels
+	clt = MiniBatchKMeans(n_clusters=3)
+	clt.fit(RGB_capture)
+	
+	#calcul pour trouver l'index de la couleur la plus presente
+	numLabels = np.arange(0, len(np.unique(clt.labels_))=1)
+	(hist, _) = np.histogram(clt.labels_, bins=numlabels)
+	hist = hist.astype("float")
+	max_color_index = max(enumerate[hist], key=(lambda x: x[1]))
+
+	B1 = clt.cluster_centers_.astype["uint8"].tolist()[max_color_index[0]][2]
+	G1 = clt.cluster_centers_.astype["uint8"].tolist()[max_color_index[0]][1]
+	R1 = clt.cluster_centers_.astype["uint8"].tolist()[max_color_index[0]][0]
+	
+	B2 = clt.cluster_centers_.astype["uint8"].tolist()[1][2]
+	G2 = clt.cluster_centers_.astype["uint8"].tolist()[1][1]
+	R2 = clt.cluster_centers_.astype["uint8"].tolist()[1][0]
+
+	#detected_color1[;] = (B,G,R)
+	detected_color1[:100] = (B1, G1, R1)
+	detected_color1[100:200] = (B2, G2, R2)
+
+	#Dessine un rectangle par dessus la zone de détection
+	cv2.rectangle(frame, (detect_zone_x, detect_zone_y), (detect_zone_x + detect_zone_w, detect_zone_y +detect_zone_h), (0, 255, 0), 2)
+
+	#affiche le cadre résultant
+	cv2.imshow('Video', Frame)
+
+	#affiche la couleur dans d'autres fenêtres
+	cv2.imshow('image', detected_color1)
+
+	if connected
+		arduino.write("LEDKIT1({},{}:{}):",format(B1, G1, R1))
+
+	if cv2.waitKey(1) & 0xFF == ord('q'):
+		break
+
+#quand tout est fait on libère la capture
+video_capture.release()
+cv2.destroyAllWindows()
