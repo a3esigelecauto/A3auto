@@ -1,0 +1,31 @@
+import cv2 
+import numpy as np 
+
+cap = cv2.VideoCapture(0) 
+
+while(1): 
+
+    # prend chaque cadre 
+    _, frame = cap.read() 
+
+    # Convertit le BGR en HSV 
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV) 
+
+    # definit la gamme de la couleur rouge en HSV 
+    lower_red = np.array([110,50,50]) 
+    upper_red = np.array([130,255,255]) 
+
+    # seuil de l'image en HSV pour n'obtenir que la couleur rouge 
+    mask = cv2.inRange(hsv, lower_red, upper_red) 
+
+    # Bitwise-AND masque  
+    res = cv2.bitwise_and(frame,frame, mask= mask) 
+
+    cv2.imshow('frame',frame) 
+    cv2.imshow('mask',mask) 
+    cv2.imshow('res',res) 
+    k = cv2.waitKey(5) & 0xFF 
+    if k == 27: 
+     break 
+
+cv2.destroyAllWindows() 
