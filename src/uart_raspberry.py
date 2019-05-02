@@ -1,7 +1,7 @@
 import serial
 
 ser = serial.Serial(
-    port='/dev/ttyAMA0',
+    port='/dev/ttyUSB0',
     baudrate=9600,
     parity=serial.PARITY_ODD,
     stopbits=serial.STOPBITS_TWO,
@@ -26,7 +26,7 @@ def uart_send(flag,value):
     return 0
 	
 def uart_receive_ultrasound():
-    return ser.read(ser.in_wainting())
+    return ser.read(ser.in_waiting())
 	
 #no response from the arduino because it's hard to handle
 #it properly without slowing the programm
