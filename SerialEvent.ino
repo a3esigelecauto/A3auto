@@ -43,6 +43,10 @@ uint8_t direction_motor(uint16_t final_angle){ //final_angle betwen 0(right), 50
     }
     return 1; //error value
 }
+
+uint8_t speed_backward(){
+    pwmWriteHR(pin_motor_speed, 3000);//set the PWM at 3000.
+}
 uint8_t read_message(void){
   if (Serial.available()) {     
     message=Serial.read();
@@ -61,7 +65,7 @@ void loop() {
       Serial.println("Message avant");
     }
     else if (message>200){
-      //appel fonction moteur en arrière
+      speed_backward();
       Serial.println("Message arriere");
     }
     else if (message<100){
