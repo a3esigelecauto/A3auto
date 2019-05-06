@@ -8,7 +8,7 @@ int pin_motor_direction = 10; //the pin that the motor for direction is attached
 int32_t frequency = 62; //frequency (in Hz)
 int message;
 uint8_t error = 0;
-
+int flag=0;
 const unsigned int TRIG_PIN=13;
 const unsigned int ECHO_PIN=12;
 
@@ -16,7 +16,7 @@ const int messages_len=8; //sets the number of bytes of the messages betaween ar
 byte readed_message[messages_len];
 int distance=0;
 void setup() {  
-    Serial.begin(9600); //sets the baud rate (bit/s)
+    Serial.begin(115200); //sets the baud rate (bit/s)
     Serial.setTimeout(0);
     pinMode(TRIG_PIN, OUTPUT);
     pinMode(ECHO_PIN, INPUT);
@@ -44,9 +44,10 @@ uint8_t direction_motor(uint16_t final_angle){ //final_angle betwen 0(right), 50
     return 1; //error value
 }
 
-uint8_t speed_backward(){
-    pwmWriteHR(pin_motor_speed, 3000);//set the PWM at 3000.
-}
+uint8_t backward(){ //final_speed betwen 0 and 100.
+      pwmWriteHR(pin_motor_speed, 3000);//set the PWM
+    return 0;
+    }
 uint8_t read_message(void){
   if (Serial.available()) {     
     message=Serial.read();
@@ -54,34 +55,7 @@ uint8_t read_message(void){
   }
   return 1; //error value
 }
-void loop() {
-   if (Serial.available())  {
-    message = Serial.parseInt();
-    if (message==0)
-    {Serial.println("erreur");}
-      else if ((message > 100) &&(message<200)) {
-    
-      speed_motor(message-100);
-      Serial.println("Message avant");
-    }
-    else if (message>200){
-      speed_backward();
-      Serial.println("Message arriere");
-    }
-    else if (message<100){
-      direction_motor(message);
-      Serial.println("Message servo");
-    }
-  }
-  distance=uls();
-  if(distance!=0){
-    Serial.println(distance);
-  }
-  delay(100);
-}
-
-
-int  uls() 
+int uls() 
 { digitalWrite(TRIG_PIN, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIG_PIN, HIGH);
@@ -89,7 +63,35 @@ int  uls()
   digitalWrite(TRIG_PIN, LOW);
   
 
- const unsigned long duration= pulseIn(ECHO_PIN, HIGH);
+ const unsigned long duration= pulseIn(ECHO_PIN, HIGH,15);
  int distance= duration/29/2;
- return distance;
+ if(duration==0){
+   return 0;
+   } 
+  else{
+      return distance ;
+  }
  }
+void loop() {
+  flag++;
+   if (Serial.available())  {
+    message = Serial.parseInt();
+      if ((message > 100) &&(message<200)) {
+    
+      speed_motor(message-100);
+    }
+    else if ((message>200) &&(message<255)){
+      backward();
+    }
+    else if ((message<100) &&){
+      direction_motor(message);
+  }}
+  
+  if (flag>=10){
+    flag=0;
+  distance=uls();
+  if(distance==0){
+    //Serial.println(distance);
+  }}delay(20);
+  
+}
