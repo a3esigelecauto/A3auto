@@ -1,3 +1,6 @@
+// author MBANA Marlin
+// date: 06/05/2019
+// title: gestion de la motorisation
 #include <Servo.h> 
  
 
