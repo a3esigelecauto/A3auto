@@ -175,11 +175,13 @@ void loop() {
 
   distance=uls();
 
-  if(distance!=0){
+  if((distance!=0) && (distance<60)){
 
-    Serial.println(distance);
+    Serial.println("1");
+    
 
-  }}delay(20);
+  }
+  else {Serial.println("0");}}delay(20);
 
   
 
