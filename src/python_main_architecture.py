@@ -3,65 +3,159 @@
 #use of tabs instead of 4 spaces, cause if done in a test editor this is going
 #to lead to execution errors on the raspberry
 #the imports of our other python files
-import pwm
 import images
-import ultrasound as uls
 import cv2
-import numpy
-from time import sleep
+import time
+import serial
+import struct
 from picamera import PiCamera
 from picamera.array import PiRGBArray
 camera = PiCamera()
-camera.resolution = (480, 320)
+camera.resolution = (320,240)
 camera.framerate = 30
-rawCapture = PiRGBArray(camera, size=(480, 320))
+rawCapture = PiRGBArray(camera, size=(320,240))
 
-def main()
+def main():
 
-#setup part,done once (not in order)
+	#setup part,done once (not in order)
 
-map1, map2 = images.undistort_img()
-#pwm.pwm_setup()
-uls.setup()
-
-uls_seuil=60
-uls=0
-stop=0
-traffic=0
-
-
-forframe in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+	#map1, map2 = images.undistort_img()
+	ser = serial.Serial('/dev/ttyACM0', 115200)
+	uls_seuil=60
 	
-	img = frame.array
-
-	img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-	#frame=cv2.remap(frame,map1,map2,interpolation=cv2.INTER_LINEAR)
-
-	white, red, yellow, green = images.get_color_masks(img,window=20)
-
-	ret_stop= images.detect_stop(red)
-	value_color= images.detect_lights(red,yellow,green) 
-	cx = images.detect_line(white)
-	uls_distance = uls.get_distance()
-
-	if (uls_distance < seuil):
-		pwm.pwm_motor(400)
-	elif (ret_stop):
-		pwm.pwm_motor(400)
-		sleep(2)
-	elif (value_color<2):
-		pwm.pwm_motor(400)
+	
+	uls=0
+	stop=0
+	traffic=0
+	
+	stop_flag=0
+	stop_flag_2=0
+	stop_done=0
+	stop_done_check=0
+	
+	
+	traffic_flag=0
+	traffic_flag_2=0
+	traffic_done=0
+	
+	motor=0
+	turn=0
+	time.sleep(1)
+	for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
 		
-	else:
-		pwm.pwm_motor(420)
-		if (cx!=0):
-			place = cx/64
+		if stop_flag<0:
+			stop_flag=0
 			
-			valeur= 280+(15*place)
-			pwm.pwm_turn(valeur)
+		if stop_flag_2!=0:
+			stop_flag_2+=1
+			if stop_flag_2==7:
+				stop_flag=0
+				stop_flag_2=0
+				
+		if traffic_flag<0:
+			traffic_flag=0
+			
+		if traffic_flag_2!=0:
+			traffic_flag_2+=1
+			if traffic_flag_2==7:
+				traffic_flag=0
+				traffic_flag_2=0
+			
+		img = frame.array
 
-pwm.motor(400)
-pwm.cleanup()
+		img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+		
+		white, red,green = images.get_color_masks(img,level=40)
+		
+		ret_stop,distance= images.detect_stop(red)
+		
+		img2=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+		value_color= 0#images.detect_lights(img2,red,green)
+		
+		
+		cx = images.detect_line(white)
+		
+		
+		serial_value = ser.read()
+		ser.reset_input_buffer()
+		uls_distance = serial_value.decode()
+		
+		if uls==0:
+			if (uls_distance =="1"):
+					ser.write(b'300')
+					print("obstacle")
+					uls=1
+					rawCapture.truncate(0)
+					continue
+		else:
+			if (uls_distance =="0"):
+					print("fin obstacle")
+					uls=0
+					rawCapture.truncate(0)
+					continue
+			else:
+				rawCapture.truncate(0)
+				continue
+		
+					
+		if stop_done==0:		
+			if (ret_stop==1):
+				stop_flag+=1
+				stop_flag_2=1
+				print("detect stop")
+				if (stop_flag>=3):
+					ser.write(b'300')
+					print("stop")
+					stop_flag=0
+					stop_done=1
+					stop_done_check=15
+					time.sleep(2)
+					rawCapture.truncate(0)
+					continue
+		elif stop_done==1:
+			stop_done_check-=1
+			if (stop_done_check<=0):
+				stop_done_check=0
+				stop_done=0
+			value_color=0
+			
+			
+		if (traffic_done==0):				
+			if (value_color==2):
+				print("traffic_spoted")
+				traffic_flag+=1
+				traffic_flag_2+=1
+				if (traffic_flag>=5):
+					ser.write(b'300')
+					traffic_done=1
+					traffic_flag=0
+					stop_done=2
+					print("traffic")
+					rawCapture.truncate(0)
+					continue
+		else:
+			if (value_color==1):
+				print("maintenant")
+				traffic_done=0
+				stop_done=0
+				rawCapture.truncate(0)
+				continue
+					
+		if (cx!=0):
+			slice=int(cx/32)
+			virage=60+6*slice
+			ser.write(str(virage).encode("latin1"))
+			print(virage)
+			print(str(virage).encode("latin1"))
+			time.sleep(0.01)
+			ser.write(b'1600')
+		else:
+			ser.write(b'300')
+			print("pas de ligne")
+			
+		
+		rawCapture.truncate(0)
+	ser.write(b'240')
 
 
 
@@ -78,5 +172,5 @@ pwm.cleanup()
 
 
 #declare main() as the main function
-if__name__== "__main__" 
+if __name__== "__main__": 
 	main()
